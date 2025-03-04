@@ -95,7 +95,7 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'HTTP-Referer': 'http://localhost:5173',
+            'HTTP-Referer': process.env.CORS_ORIGIN || 'http://localhost:5173',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -134,7 +134,7 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'http://localhost:5173',
+        'HTTP-Referer': process.env.CORS_ORIGIN || 'http://localhost:5173',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -247,7 +247,7 @@ router.post('/api/generate-report', authenticateToken, (async (req: Request, res
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'HTTP-Referer': 'http://localhost:5173',
+            'HTTP-Referer': process.env.CORS_ORIGIN || 'http://localhost:5173',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -387,7 +387,7 @@ ${paperAnalyses.map(({ paper, analysis }) =>
 ).join('\n')}`;
 
     try {
-      const headers: HeadersInit = {
+      const headers: Record<string, string> = {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'HTTP-Referer': process.env.CORS_ORIGIN || 'http://localhost:5173',
         'Content-Type': 'application/json'
@@ -484,7 +484,7 @@ router.post('/api/suggest-prompt', authenticateUser, (async (req: Request, res: 
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'http://localhost:5173',
+        'HTTP-Referer': process.env.CORS_ORIGIN || 'http://localhost:5173',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -569,7 +569,7 @@ async function getResearchTags(query: string): Promise<string[]> {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'http://localhost:5173',
+        'HTTP-Referer': process.env.CORS_ORIGIN || 'http://localhost:5173',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
