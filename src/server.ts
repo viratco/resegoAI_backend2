@@ -64,24 +64,35 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
+    console.log('Starting paper search with query:', query);
+    console.log('Environment variables:', {
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY ? 'Present' : 'Missing',
+      CORS_ORIGIN: process.env.CORS_ORIGIN || 'Not set'
+    });
+
     const arxivResponse = await fetch(
       `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&start=0&max_results=6`
     );
 
     if (!arxivResponse.ok) {
+      const errorText = await arxivResponse.text();
+      console.error('ArXiv API error:', arxivResponse.status, errorText);
       throw new Error(`ArXiv API error: ${arxivResponse.statusText}`);
     }
 
     const xmlData = await arxivResponse.text();
+    console.log('Received ArXiv response');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlData, "text/xml");
     const entries = xmlDoc.getElementsByTagName("entry");
 
     if (!entries || entries.length === 0) {
+      console.log('No papers found for query');
       res.json({ papers: [], summaries: [], consolidatedSummary: '' });
       return;
     }
     
+    console.log(`Found ${entries.length} papers`);
     const papers = Array.from(entries).map(entry => ({
       title: entry.getElementsByTagName("title")[0]?.textContent?.replace(/\n/g, ' ').trim() || "",
       authors: Array.from(entry.getElementsByTagName("author")).map(a => a.textContent?.trim() || ""),
@@ -89,8 +100,10 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
       link: entry.getElementsByTagName("id")[0]?.textContent || ""
     }));
 
-    const summaries = await Promise.all(papers.map(async (paper) => {
+    console.log('Starting AI analysis of papers');
+    const summaries = await Promise.all(papers.map(async (paper, index) => {
       try {
+        console.log(`Analyzing paper ${index + 1}/${papers.length}`);
         const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -130,6 +143,7 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
       }
     }));
 
+    console.log('Generating consolidated summary');
     const consolidatedResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -165,6 +179,7 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
 
     const consolidatedSummary = consolidatedData.choices[0]?.message?.content || 'Overview not available';
 
+    console.log('Search completed successfully');
     res.json({ papers, summaries, consolidatedSummary });
   } catch (error) {
     console.error('Server error:', error);
@@ -176,28 +191,42 @@ const searchPapers = async (req: Request, res: Response): Promise<void> => {
 const authenticateUser = (async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = req.headers.authorization;
   
+  console.log('Auth header:', authHeader ? 'Present' : 'Missing');
+  
   if (!authHeader) {
+    console.error('No authorization header found');
     res.status(401).json({ error: 'No authorization header' });
     return;
   }
 
   try {
     const token = authHeader.replace('Bearer ', '');
+    console.log('Token:', token ? 'Present' : 'Missing');
+    
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (error || !user) {
+    if (error) {
+      console.error('Supabase auth error:', error);
       res.status(401).json({ error: 'Invalid token' });
       return;
     }
 
+    if (!user) {
+      console.error('No user found for token');
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+
+    console.log('User authenticated:', user.id);
     req.user = user;
     next();
   } catch (error) {
+    console.error('Authentication error:', error);
     res.status(401).json({ error: 'Authentication failed' });
   }
 }) as RequestHandler;
 
-router.post('/api/search-papers', authenticateToken, (async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.post('/api/search-papers', authenticateUser, (async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await searchPapers(req, res);
   } catch (error) {
