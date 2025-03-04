@@ -23,7 +23,7 @@ const supabase = createClient(
 
 // Configure CORS with middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: ['https://resego-ai-frontedn2.vercel.app', 'http://localhost:5173'],
   methods: ['GET', 'POST'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -374,7 +374,7 @@ List all papers in APA format:
 1. Use only the provided papers as the dataset.  
 2. Cite paper titles in the text (e.g., "As shown in 'Paper Title'").  
 3. Include quantitative data (e.g., percentages, metrics) where available.  
-4. Avoid speculation; ground all statements in the papers’ abstracts or analyses.  
+4. Avoid speculation; ground all statements in the papers' abstracts or analyses.  
 5. Ensure table data is concise and relevant to "${query}".  
 
 **Dataset:**  
